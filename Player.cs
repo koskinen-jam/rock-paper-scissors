@@ -14,6 +14,15 @@ namespace RockPaperScissors
 	// Base player class
 	public abstract class Player
 	{
+		// Game reference for AI players
+		protected Game? game;
+
+		// Set game reference for AI players
+		public void SetGame(Game g)
+		{
+			game = g;
+		}
+
 		public PlayerInfo info { get; protected set; }
 
 		// Create a player with given info
@@ -24,6 +33,11 @@ namespace RockPaperScissors
 
 		// Return the players next move
 		public abstract Move GetNextMove();
+
+		public override string ToString()
+		{
+			return $"{info.name}";
+		}
 	}
 
 	// Human player with a keyboard controller
@@ -54,9 +68,19 @@ namespace RockPaperScissors
 
 	// Base AI player class
 	public abstract class AIPlayer : Player {
+		protected static Random? random { get; set; }
 
 		// Create an AI player with given info
-		public AIPlayer(PlayerInfo info) : base(info) { }
+		public AIPlayer(PlayerInfo info) : base(info) {
+			random ??= new Random((int) DateTime.Now.Ticks);
+		}
+
+		// Return a random move
+		public Move RandomMove()
+		{
+			int rnd = (random ?? new Random((int) DateTime.Now.Ticks)).Next(1,4);
+			return new Move((MoveType) rnd);
+		}
        	}
 
 	// Player keyboard listener
@@ -74,5 +98,4 @@ namespace RockPaperScissors
 			return lastPressed.Key;
 		}
 	}
-
 }
