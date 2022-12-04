@@ -12,7 +12,7 @@ namespace RockPaperScissors
 	// players move to determine which is better.
 	public class Move
 	{
-		private MoveType type { get; }
+		public MoveType type { get; }
 
 		// Parse a Move
 		public Move(string m)
@@ -135,80 +135,120 @@ namespace RockPaperScissors
 					? Scissors()
 					: Rock();
 		}
+
+		// Return a clone of this move
+		public Move Clone()
+		{
+			return new Move(type);
+		}
 	}
 
 	// A round of Rock Paper Scissors, including extra scoring rules invented
 	// by elves.
 	public class Round
 	{
-		private Move p1 { get; }
-		private Move p2 { get; }
+		public Player p1 { get; }
+		public Player p2 { get; }
+		public Move m1 { get; }
+		public Move m2 { get; }
 
-		private string outcome { get; }
+		public string outcome { get; }
+		public Player? winner { get; }
 
-		private (int p1, int p2) points { get; }
+		public (int p1, int p2) Points { get; }
 
 		// Create and resolve a round of Rock Paper Scissors
-		public Round(Move p1, Move p2)
+		public Round(Player p1, Player p2, Move m1, Move m2)
 		{
 			this.p1 = p1;
 			this.p2 = p2;
+			this.m1 = m1;
+			this.m2 = m2;
 
-			switch (p1.CompareTo(p2))
+			switch (m1.CompareTo(m2))
 			{
 				case -1:
-					outcome = "Player 2 wins";
-					points = ((int)p1, (int)p2 + 6);
+					outcome = $"{m1} loses to {m2}";
+					Points = ((int)m1, (int)m2 + 6);
+					winner = p2;
 					break;
 				case 0:
-					outcome = "Tie";
-					points = ((int)p1 + 3, (int)p2 + 3);
+					outcome = $"{m1} ties with {m2}";
+					Points = ((int)m1 + 3, (int)m2 + 3);
+					winner = null;
 					break;
 				case 1:
-					outcome = "Player 1 wins";
-					points = ((int)p1 + 6, (int)p2);
+					outcome = $"{m1} beats {m2}";
+					Points = ((int)m1 + 6, (int)m2);
+					winner = p1;
 					break;
 				default:
-					throw new Exception($"Bad comparison result for {p1} vs {p2}: {p1.CompareTo(p2)}");
+					throw new Exception($"Bad comparison result for {m1} vs {m2}: {m1.CompareTo(m2)}");
 			}		
 		}
 
 		// Convert this round into a string
 		public override string ToString()
 		{
-			return $"{p1} vs {p2} - {outcome}! Player 1 gets {points.p1} points, player 2 gets {points.p2} points.";
+			return $"{outcome}! {p1} (+{Points.p1}), {p2} (+{Points.p2})";
 		}
 
-		// Parse a string like "B Z" into a new Round
-		public static Round Parse(string input)
+		// Return the players move this round
+		public Move MyMove(Player me)
 		{
-			string[] moves = input.Split(" ");
-
-			return new Round(new Move(moves[0]), new Move(moves[1]));
+			return p1 == me ? m1 : m2;
 		}
 
-		public (int p1, int p2) GetPoints()
+		// Return the opponents move this round
+		public Move OpponentsMove(Player me)
 		{
-			return points;
+			return p1 == me ? m2 : m1;
 		}
 	}
 
 	// A game of Rock Paper Scissors consisting of many rounds
 	public class Game
 	{
+		public Player p1 { get; }
+		public Player p2 { get; }
+		public int totalRounds { get; }
 		public List<Round> rounds { get; }
-		public Round lastRound {
+		
+		// Returns true if enough rounds have been played
+		public bool over {
+			get
+			{
+				return rounds.Count >= totalRounds;
+			}
+		}
+
+		// Return the current round number
+		public int currentRound {
+			get
+			{
+				return over ? rounds.Count : rounds.Count + 1;
+			}
+		}
+
+		// Return the most recently played round
+		public Round? lastRound {
 			get {
+				if (rounds.Count < 1)
+				{
+					return null;
+				}
 				return rounds[rounds.Count - 1];
 			}
 		}
+
+		// Which round the scores were last calculated at
 		private int scoredAt = 0;
 
 		// Backing variable for points
 		private (int p1, int p2) latestPoints = (0, 0);
 
 		// Current points as readable public property. I guess.
-		public (int p1, int p2) points {
+		public (int p1, int p2) Points {
 			get
 			{
 				if (rounds.Count == scoredAt)
@@ -229,45 +269,55 @@ namespace RockPaperScissors
 
 				foreach (Round r in rounds)
 				{
-					latestPoints.p1 += r.GetPoints().p1;
-					latestPoints.p2 += r.GetPoints().p2;
+					latestPoints.p1 += r.Points.p1;
+					latestPoints.p2 += r.Points.p2;
 				}
 		}
 
 		// Create a new game of Rock Paper Scissors
-		public Game()
+		public Game(Player p1, Player p2, int totalRounds = 3)
 		{
+			this.p1 = p1;
+			if (p1 is AIPlayer)
+			{
+				p1.SetGame(this);
+			}
+
+			this.p2 = p2;
+			if (p2 is AIPlayer)
+			{
+				p2.SetGame(this);
+			}
+
+			this.totalRounds = totalRounds;
 			this.rounds = new List<Round>();
 		}
 
-		// Play a round using a strategy guide line
-		public void Play(string input)
+		// Play a round with given moves, if the game is not over yet
+		public void Play(Move m1, Move m2)
 		{
-			rounds.Add(Round.Parse(input));
-		}
-
-		// Play a round using moves
-		public void Play(Move p1, Move p2)
-		{
-			rounds.Add(new Round(p1, p2));
+			if (! over)
+			{
+				rounds.Add(new Round(p1, p2, m1, m2));
+			}
 		}
 
 		// Return current standings
 		public override string ToString()
 		{
-			return $"After {rounds.Count} rounds, scores are {points.p1} to {points.p2}. {State()}";
+			return $"{rounds.Count} rounds played. {p1.info.name} {Points.p1} -  {Points.p2} {p2.info.name}. {State()}";
 		}
 
 		// Return description of which player is winning
 		public string State()
 		{
-			if (points.p1 == points.p2)
+			if (Points.p1 == Points.p2)
 			{
-				return "It's a tie";
+				return "Tie";
 			}
 			else
 			{
-				return $"Player {(points.p1 > points.p2 ? "1" : "2")} is winning";
+				return $"{(Points.p1 > Points.p2 ?  p1.info.name : p2.info.name)} {(over ? "wins" : "is winning")}";
 			}
 		}
 	}
