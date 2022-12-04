@@ -4,29 +4,37 @@ using RockPaperScissors.AI;
 PlayerController control = new PlayerController();
 
 Player me = new HumanPlayer(new PlayerInfo("You"), control);
-Player ai = new AlwaysRock(new PlayerInfo("AI"));
+/* Player ai = new AlwaysRock(new PlayerInfo("AI")); */
+Player ai = new RepeatsYourLastMove(new PlayerInfo("AI"));
 
 bool stop = false;
 while (! stop)
 {
 	Console.WriteLine("Let's play!");
 
-	Game g = new Game();
+	Game g = new Game(me, ai, 5);
 	
-	for (int i = 1; i <= 10; i++)
+	while (! g.over)
 	{
-		Console.Write($"\n\t--- Round {i} ---\n\nChoose move: rps> ");
+		Console.WriteLine($"\t--- Round {g.currentRound} ---");
+
+		Console.Write($"{g.p1}, choose move: [rps]> ");
 
 		Move myMove = me.GetNextMove();
 
-		Console.Write($"{myMove}\n\n");
-		g.Play(myMove, ai.GetNextMove());
+		Console.WriteLine($"{myMove}");
+		
+		Move aiMove = ai.GetNextMove();
 
-		Console.WriteLine($"\n{g.lastRound}");
+		Console.WriteLine($"{ai.info.name} chose {aiMove}");
+
+		g.Play(myMove, aiMove);
+
+		Console.WriteLine($"{g.lastRound}");
 	}
 
 	Console.WriteLine($"\n{g}\n");
-	Console.WriteLine($"Play again?\n(y)n> ");
+	Console.WriteLine($"Play again? [(y)n]> ");
 
 	bool keyOk = false;
 	do
