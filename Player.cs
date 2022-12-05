@@ -66,6 +66,22 @@ namespace RockPaperScissors
 		}
 	}
 
+	// Player keyboard listener
+	public class PlayerController
+	{
+		public ConsoleKeyInfo lastPressed { get; set; }
+
+		// Wait for a keypress and return the pressed key
+		public ConsoleKey GetKey()
+		{
+			while (! Console.KeyAvailable) {}
+
+			lastPressed = Console.ReadKey(true);
+			
+			return lastPressed.Key;
+		}
+	}
+
 	// Base AI player class
 	public abstract class AIPlayer : Player {
 		protected static Random? random { get; set; }
@@ -83,19 +99,13 @@ namespace RockPaperScissors
 		}
        	}
 
-	// Player keyboard listener
-	public class PlayerController
-	{
-		public ConsoleKeyInfo lastPressed { get; set; }
+	/* public class Strategy { */
+	/* 	private Player me { get; } */
+	/* 	private Player opponent { get; } */
+	/* 	private Game game { get; } */
+		
 
-		// Wait for a keypress and return the pressed key
-		public ConsoleKey GetKey()
-		{
-			while (! Console.KeyAvailable) {}
+	/* } */
 
-			lastPressed = Console.ReadKey(true);
-			
-			return lastPressed.Key;
-		}
-	}
+
 }
