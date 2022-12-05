@@ -265,13 +265,39 @@ namespace RockPaperScissors
 		private void UpdateScores()
 		{
 				scoredAt = rounds.Count;
-				latestPoints = (0, 0);
+				latestPoints = Standings(rounds.Count - 1);
+				return;
+		}
 
-				foreach (Round r in rounds)
-				{
-					latestPoints.p1 += r.Points.p1;
-					latestPoints.p2 += r.Points.p2;
-				}
+		// Calculate the players scores after given round.
+		public (int p1, int p2) Standings(int round)
+		{
+			(int p1, int p2) points = (0, 0);
+
+			for (int i = 0; i <= round; i++)
+			{
+				points.p1 += rounds[i].Points.p1;
+				points.p2 += rounds[i].Points.p2;
+			}
+
+			return points;
+		}
+
+		// Stringified report with outcome of given round and standings after it
+		public string RoundReport(int roundNumber)
+		{
+			Round round = rounds[roundNumber];
+			(int p1, int p2) points = Standings(roundNumber);
+
+			return $"{round.outcome, -28}"
+				+ $"{round.p1.info.name, 10} {points.p1, 3} (+{round.Points.p1, 2}) - "
+				+ $"{points.p2, 3} (+{round.Points.p2, 2}) {round.p2.info.name, -10}";
+		}
+
+		// Stringified report with last rounds outcome and standings after it
+		public string LastRoundReport()
+		{
+			return RoundReport(rounds.Count - 1);
 		}
 
 		// Create a new game of Rock Paper Scissors
