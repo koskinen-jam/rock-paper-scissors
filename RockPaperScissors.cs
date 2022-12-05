@@ -232,12 +232,23 @@ namespace RockPaperScissors
 
 		// Return the most recently played round
 		public Round? lastRound {
-			get {
+			get
+			{
 				if (rounds.Count < 1)
 				{
 					return null;
 				}
 				return rounds[rounds.Count - 1];
+			}
+		}
+
+		public bool Observed { get; set; } = false;
+
+		// Return true if there is someone in the forest to hear the tree fall
+		public bool IsObserved {
+			get
+			{
+				return Observed || p1 is HumanPlayer || p2 is HumanPlayer;
 			}
 		}
 
@@ -301,7 +312,7 @@ namespace RockPaperScissors
 		}
 
 		// Create a new game of Rock Paper Scissors
-		public Game(Player p1, Player p2, int totalRounds = 3)
+		public Game(Player p1, Player p2, int totalRounds = 3, bool Observed = false)
 		{
 			this.p1 = p1;
 			if (p1 is AIPlayer)
@@ -317,6 +328,11 @@ namespace RockPaperScissors
 
 			this.totalRounds = totalRounds;
 			this.rounds = new List<Round>();
+
+			this.Observed = Observed;
+
+			GameEvents.SubscribeGame(this);
+			OnGameStart();
 		}
 
 		// Play a round with given moves, if the game is not over yet
@@ -324,7 +340,15 @@ namespace RockPaperScissors
 		{
 			if (! over)
 			{
-				rounds.Add(new Round(p1, p2, m1, m2));
+				Round r = new Round(p1, p2, m1, m2);
+				rounds.Add(r);
+				OnRoundEnd(r);
+			}
+
+			if (over)
+			{
+				OnGameEnd();
+				GameEvents.UnsubscribeGame(this);
 			}
 		}
 
@@ -346,43 +370,62 @@ namespace RockPaperScissors
 				return $"{(Points.p1 > Points.p2 ?  p1.info.name : p2.info.name)} {(over ? "wins" : "is winning")}";
 			}
 		}
-	}
 
-	// Parsers for elves' secret Rock Paper Scissors strategy guide
-	public class Strategy
-	{
-		// Initial, naive understanding of strategy, where second move is
-		// interpreted as an explicit move.
-		public static (Move p1, Move p2) ParseNaive(string s)
+		public event EventHandler<RoundEventArgs>? RoundStarted;
+		public event EventHandler<RoundEventArgs>? RoundEnded;
+		public event EventHandler? GameStarted;
+		public event EventHandler? GameEnded;
+
+		public void OnRoundStart(Round r)
 		{
-			string[] moves = s.Split(" ");
-			return (new Move(moves[0]), new Move(moves[1]));
+			RoundEventArgs e = new RoundEventArgs();
+			e.Round = r;
+			RoundStarted?.Invoke(this, e);			
 		}
 
-		// Full explanation of strategy, where second value means whether
-		// you should lose, tie or win the round.
-		public static (Move p1, Move p2) ParseCunning(string s)
+		public void OnRoundEnd(Round r)
 		{
-			string[] moves = s.Split(" ");
-			Move p1 = new Move(moves[0]);
+			RoundEventArgs e = new RoundEventArgs();
+			e.Round = r;
+			RoundEnded?.Invoke(this, e);
+		}
 
-			Move p2;
-			switch (moves[1])
-			{
-				case "X":
-					p2 = p1.Wins();
-					break;
-				case "Y":
-					p2 = p1.TiesWith();
-					break;
-				case "Z":
-					p2 = p1.LosesTo();
-					break;
-				default:
-					throw new Exception($"Whatever this {moves[1]} means...");
-			}
+		public void OnGameStart()
+		{
+			GameStarted?.Invoke(this, new EventArgs());
+		}
 
-			return (p1, p2);
+		public void OnGameEnd()
+		{
+			GameEnded?.Invoke(this, new EventArgs());
+		}
+	}
+
+	// Event arguments for round events
+	public class RoundEventArgs : EventArgs
+	{
+		public Round? Round { get; set; }
+	}
+
+	// Manager for handling Game event subscriptions
+	public class GameEvents
+	{
+		// Subscribe the UI to a game
+		public static void SubscribeGame(Game g)
+		{
+			g.RoundStarted += UI.ConsoleOutput.RoundStartedEventHandler;
+			g.RoundEnded += UI.ConsoleOutput.RoundEndedEventHandler;
+			g.GameStarted += UI.ConsoleOutput.GameStartedEventHandler;
+			g.GameEnded += UI.ConsoleOutput.GameEndedEventHandler;
+		}
+
+		// Unsubscribe the UI from a game
+		public static void UnsubscribeGame(Game g)
+		{
+			g.RoundStarted -= UI.ConsoleOutput.RoundStartedEventHandler;
+			g.RoundEnded -= UI.ConsoleOutput.RoundEndedEventHandler;
+			g.GameStarted -= UI.ConsoleOutput.GameStartedEventHandler;
+			g.GameEnded -= UI.ConsoleOutput.GameEndedEventHandler;
 		}
 	}
 }
