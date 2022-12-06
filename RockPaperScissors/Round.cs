@@ -9,6 +9,7 @@ namespace RockPaperScissors
 		public Move m1 { get; }
 		public Move m2 { get; }
 
+		public Outcome Outcome { get; }
 		public string outcome { get; }
 		public Player? winner { get; }
 
@@ -63,6 +64,42 @@ namespace RockPaperScissors
 		public Move OpponentsMove(Player me)
 		{
 			return p1 == me ? m2 : m1;
+		}
+	}
+
+	public class Outcome
+	{
+		public Player? Winner { get; }
+		public ScorePair Points { get; }
+		public bool IsTie {
+			get
+			{
+				return Winner == null;
+			}
+		}
+
+		public Outcome(Player? Winner, ScorePair points)
+		{
+			this.Winner = Winner;
+			this.Points = points;
+		}
+
+		public Outcome(Player? Winner, int points1, int points2)
+		{
+			this.Winner = Winner;
+			this.Points = new ScorePair(points1, points2);
+		}
+	}
+
+	public class ScorePair
+	{
+		public int P1 { get; }
+		public int P2 { get; }
+
+		public ScorePair(int score1, int score2)
+		{
+			this.P1 = score1;
+			this.P2 = score2;
 		}
 	}
 }
