@@ -28,16 +28,19 @@ namespace RockPaperScissors
 					outcome = $"{m1} loses to {m2}";
 					Points = ((int)m1, (int)m2 + 6);
 					winner = p2;
+					Outcome = new Outcome(p2, (int) m1, 6 + (int) m2);
 					break;
 				case 0:
 					outcome = $"{m1} ties with {m2}";
 					Points = ((int)m1 + 3, (int)m2 + 3);
 					winner = null;
+					Outcome = new Outcome(null, 3 + (int) m1, 3 + (int) m2);
 					break;
 				case 1:
 					outcome = $"{m1} beats {m2}";
 					Points = ((int)m1 + 6, (int)m2);
 					winner = p1;
+					Outcome = new Outcome(p1, 6 + (int) m1, (int) m2);
 					break;
 				default:
 					throw new Exception($"Bad comparison result for {m1} vs {m2}: {m1.CompareTo(m2)}");
